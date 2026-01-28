@@ -1,0 +1,7 @@
+{
+  "name": "Mindmatrix SEO",
+  "description": "Enterprise-grade SEO SaaS platform with 100+ tools, AI insights, and localized support for Bangladeshi users.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
