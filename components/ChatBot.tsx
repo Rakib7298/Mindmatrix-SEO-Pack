@@ -36,20 +36,28 @@ const ChatBot: React.FC = () => {
         ? TOOLS.find(t => t.id === state.selectedToolId)?.name[state.language] 
         : 'the Dashboard';
 
+      const region = state.seoSettings.targetRegion === 'BD' ? 'Bangladesh' : 'Global';
+      const languageName = state.language === 'bn' ? 'Bangla' : 'English';
+
       const systemInstruction = `
-        You are Mindmatrix AI Assistant, an expert SEO consultant for Bangladeshi users.
-        User is currently on: ${currentToolName}.
-        Help the user with SEO strategy, how to use the available 100 tools, and local market tips for Bangladesh.
-        Answer in ${state.language === 'bn' ? 'Bangla' : 'English'}.
-        Keep it concise and actionable.
+        You are Mindmatrix AI Assistant, an expert SEO consultant.
+        
+        Context:
+        - Current View: ${currentToolName}
+        - User Business: ${state.seoSettings.businessName || 'General'}
+        - User Market: ${region}
+        - Response Language: ${languageName}
+        
+        Help the user with SEO strategy, tool guidance, and actionable insights.
+        Answer specifically in ${languageName}.
+        Keep it concise and professional.
       `;
 
-      // Fixed: Removed state.apiKey parameter as callGeminiAI now uses process.env.API_KEY
       const response = await callGeminiAI(
         'gemini-3-flash-preview',
         userMsg,
         systemInstruction,
-        true // Enable search for up-to-date SEO news
+        true // Enable search for up-to-date context
       );
 
       setMessages(prev => [...prev, { role: 'ai', text: response.text }]);

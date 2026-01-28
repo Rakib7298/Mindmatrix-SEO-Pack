@@ -1,24 +1,37 @@
 
-import { Tool, ToolCategory } from './types';
+import { Tool, ToolCategory, SeoSettings, Language } from './types';
 
 /**
  * System Prompt Template Generator
+ * Now returns a function for dynamic injection of user context.
  */
-const buildSystemPrompt = (name: string, category: string, instructions: string, outputRules: string) => `
+const buildSystemPrompt = (name: string, category: string, instructions: string, outputRules: string) => 
+  (settings: SeoSettings, lang: Language) => {
+    const region = settings.targetRegion === 'BD' ? 'Bangladesh' : 'Global';
+    const languageName = lang === 'bn' ? 'Bangla' : 'English';
+    
+    return `
 You are an expert SEO tool engine inside Mindmatrix SEO.
 
 Tool Name: ${name}
 Category: ${category}
 
-Target Market: Bangladesh
+Target Context:
+- Business: ${settings.businessName || 'General User'}
+- Website: ${settings.websiteUrl || 'N/A'}
+- Primary Market: ${region}
+- Preferred Output Language: ${languageName}
+
 SEO Standard: White-hat only
 
 Instructions:
 ${instructions}
-- Follow modern Google SEO best practices
-- Avoid keyword stuffing or spam tactics
-- If metrics are estimated, label them clearly
-- Output must be clean, structured, and copy-ready
+- Localize all advice for the ${region} market.
+- Respond in ${languageName} (if Bangla, use professional clear tone).
+- Follow modern Google SEO best practices.
+- Avoid keyword stuffing or spam tactics.
+- If metrics are estimated, label them clearly.
+- Output must be clean, structured, and copy-ready.
 
 Output Requirements:
 ${outputRules}
@@ -26,6 +39,7 @@ ${outputRules}
 Recommended Next Action:
 Suggest 1–2 relevant Mindmatrix SEO tools.
 `;
+};
 
 export const TOOLS: Tool[] = [
   // 🟩 KEYWORD RESEARCH TOOLS (1–20)
@@ -41,7 +55,7 @@ export const TOOLS: Tool[] = [
       { name: 'seed', label: { en: 'Seed Keyword', bn: 'মূল কীওয়ার্ড' }, type: 'text', placeholder: { en: 'e.g. digital marketing bd', bn: 'উদা: ডিজিটাল মার্কেটিং বিডি' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Keyword Generator', 'Keyword Research', 
-      'Generate a list of high-intent keywords based on the seed. Focus on Bangladesh search behavior.',
+      'Generate a list of high-intent keywords based on the seed. Focus on local search behavior.',
       'Group by intent: Informational, Commercial, Transactional. Use a Markdown table.')
   },
   {
@@ -69,7 +83,7 @@ export const TOOLS: Tool[] = [
       { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'Investment tips', bn: 'বিনিয়োগের টিপস' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Bangla Keyword Generator', 'Keyword Research',
-      'Generate Bangla keywords used by real Bangladeshi searchers. Avoid literal translations.',
+      'Generate natural language keywords used by local searchers. Avoid literal translations.',
       'Prefer natural Bangla queries. List 15-20 variations.')
   },
   {
@@ -167,7 +181,7 @@ export const TOOLS: Tool[] = [
       { name: 'keyword', label: { en: 'Keyword', bn: 'কীওয়ার্ড' }, type: 'text', placeholder: { en: 'Insurance', bn: 'ইন্স্যুরেন্স' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('CPC Estimator (BD)', 'Keyword Research',
-      'Estimate CPC value for Bangladesh advertisers.',
+      'Estimate CPC value for local advertisers.',
       'Label values as approximate. Provide Low and High range.')
   },
   {
@@ -224,7 +238,7 @@ export const TOOLS: Tool[] = [
       { name: 'service', label: { en: 'Service', bn: 'সার্ভিস' }, type: 'text', placeholder: { en: 'Plumber', bn: 'প্লাম্বার' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Local Keyword Finder', 'Keyword Research',
-      'Generate location-based keywords for Bangladesh cities (Dhaka, CTG, etc.).',
+      'Generate location-based keywords for major cities.',
       'Include "near me" and specific area names.')
   },
   {
@@ -238,7 +252,7 @@ export const TOOLS: Tool[] = [
       { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'Fashion', bn: 'ফ্যাশন' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Seasonal Keyword Analyzer', 'Keyword Research',
-      'Identify seasonal relevance (Ramadan, Eid, sales events) in BD.',
+      'Identify seasonal relevance (Ramadan, Eid, sales events) in the target market.',
       'Suggest content timing.')
   },
   {
@@ -310,7 +324,7 @@ export const TOOLS: Tool[] = [
     ],
     systemPrompt: buildSystemPrompt('Ecommerce Keyword Tool', 'Keyword Research',
       'Generate buyer-intent ecommerce keywords.',
-      'Include "buy", "price", "best" variations for BD market.')
+      'Include "buy", "price", "best" variations.')
   },
 
   // 🟦 CONTENT & AI WRITING TOOLS (21–45)
@@ -323,7 +337,6 @@ export const TOOLS: Tool[] = [
     isAI: true,
     popular: true,
     inputs: [
-      // Fix: Added missing placeholders
       { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Benefits of SEO for Business', bn: 'উদা: ব্যবসার জন্য এসইওর উপকারিতা' }, required: true },
       { name: 'keywords', label: { en: 'Keywords', bn: 'কীওয়ার্ডসমূহ' }, type: 'text', placeholder: { en: 'e.g. seo tips, digital marketing', bn: 'উদা: এসইও টিপস, ডিজিটাল মার্কেটিং' } }
     ],
@@ -339,11 +352,10 @@ export const TOOLS: Tool[] = [
     icon: 'Type',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Online earning tips', bn: 'উদা: অনলাইনে আয়ের টিপস' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Bangla Article Generator', 'Content & AI Writing',
-      'Write natural, professional Bangla SEO content.',
+      'Write natural, professional content.',
       'Focus on formal yet engaging tone.')
   },
   {
@@ -354,8 +366,7 @@ export const TOOLS: Tool[] = [
     icon: 'Tag',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
-      { name: 'topic', label: { en: 'Page Content', bn: 'পেজ কন্টেন্ট' }, type: 'text', placeholder: { en: 'e.g. Best SEO Service in Dhaka', bn: 'উদা: ঢাকার সেরা এসইও সার্ভিস' }, required: true }
+      { name: 'topic', label: { en: 'Page Content', bn: 'পেজ কন্টেন্ট' }, type: 'text', placeholder: { en: 'e.g. Best SEO Service', bn: 'উদা: সেরা এসইও সার্ভিস' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Meta Title Generator', 'Content & AI Writing',
       'Generate SEO-friendly meta titles within 60 characters.',
@@ -369,7 +380,6 @@ export const TOOLS: Tool[] = [
     icon: 'FileText',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'content', label: { en: 'Page Context', bn: 'পেজ কনটেক্সট' }, type: 'textarea', placeholder: { en: 'Briefly describe your page...', bn: 'আপনার পেজ সম্পর্কে সংক্ষেপে লিখুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Meta Description Generator', 'Content & AI Writing',
@@ -384,7 +394,6 @@ export const TOOLS: Tool[] = [
     icon: 'HelpCircle',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Product Warranty', bn: 'উদা: প্রোডাক্ট ওয়ারেন্টি' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('FAQ Schema Generator', 'Content & AI Writing',
@@ -399,7 +408,6 @@ export const TOOLS: Tool[] = [
     icon: 'RefreshCcw',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Original Content', bn: 'মূল কন্টেন্ট' }, type: 'textarea', placeholder: { en: 'Paste your content to rewrite...', bn: 'রিরাইট করার জন্য কন্টেন্ট পেস্ট করুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Content Rewriter', 'Content & AI Writing',
@@ -414,7 +422,6 @@ export const TOOLS: Tool[] = [
     icon: 'Copy',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Text', bn: 'টেক্সট' }, type: 'textarea', placeholder: { en: 'Paste text to paraphrase...', bn: 'প্যারাফ্রেজ করার জন্য টেক্সট দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Paraphraser', 'Content & AI Writing',
@@ -429,7 +436,6 @@ export const TOOLS: Tool[] = [
     icon: 'BookOpen',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Content', bn: 'কন্টেন্ট' }, type: 'textarea', placeholder: { en: 'Paste content for analysis...', bn: 'বিশ্লেষণের জন্য কন্টেন্ট পেস্ট করুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Readability Analyzer', 'Content & AI Writing',
@@ -444,7 +450,6 @@ export const TOOLS: Tool[] = [
     icon: 'BarChart',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Content', bn: 'কন্টেন্ট' }, type: 'textarea', placeholder: { en: 'Paste content to score...', bn: 'স্কোর করার জন্য কন্টেন্ট পেস্ট করুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Content Score Analyzer', 'Content & AI Writing',
@@ -459,7 +464,6 @@ export const TOOLS: Tool[] = [
     icon: 'Sparkles',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Content', bn: 'কন্টেন্ট' }, type: 'textarea', placeholder: { en: 'Paste content to optimize...', bn: 'অপ্টিমাইজ করার জন্য কন্টেন্ট পেস্ট করুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('AI Content Optimizer', 'Content & AI Writing',
@@ -474,8 +478,7 @@ export const TOOLS: Tool[] = [
     icon: 'Layout',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
-      { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Future of AI in Bangladesh', bn: 'উদা: বাংলাদেশে এআই-এর ভবিষ্যৎ' }, required: true }
+      { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Future of AI', bn: 'উদা: এআই-এর ভবিষ্যৎ' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Blog Outline Generator', 'Content & AI Writing',
       'Create SEO-friendly blog outline with H1-H3 structure.',
@@ -489,7 +492,6 @@ export const TOOLS: Tool[] = [
     icon: 'Youtube',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'topic', label: { en: 'Video Topic', bn: 'ভিডিও টপিক' }, type: 'text', placeholder: { en: 'e.g. How to start a startup', bn: 'উদা: কীভাবে স্টার্টআপ শুরু করবেন' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('YouTube Script Generator', 'Content & AI Writing',
@@ -504,7 +506,6 @@ export const TOOLS: Tool[] = [
     icon: 'Facebook',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'post', label: { en: 'Post Description', bn: 'পোস্ট ডেসক্রিপশন' }, type: 'textarea', placeholder: { en: 'Describe your post context...', bn: 'আপনার পোস্ট সম্পর্কে লিখুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Facebook Caption Generator', 'Content & AI Writing',
@@ -519,7 +520,6 @@ export const TOOLS: Tool[] = [
     icon: 'ShoppingBag',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'product', label: { en: 'Product Details', bn: 'প্রোডাক্ট ডিটেইলস' }, type: 'textarea', placeholder: { en: 'Enter product features and specs...', bn: 'প্রোডাক্টের বৈশিষ্ট্য ও তথ্য দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Product Description Generator', 'Content & AI Writing',
@@ -534,7 +534,6 @@ export const TOOLS: Tool[] = [
     icon: 'UserCheck',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'AI Generated Text', bn: 'এআই টেক্সট' }, type: 'textarea', placeholder: { en: 'Paste AI text to humanize...', bn: 'এআই টেক্সট পেস্ট করুন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('AI Content Humanizer', 'Content & AI Writing',
@@ -549,7 +548,6 @@ export const TOOLS: Tool[] = [
     icon: 'Columns',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholders
       { name: 'my_post', label: { en: 'My Post', bn: 'আমার পোস্ট' }, type: 'textarea', placeholder: { en: 'Paste your content...', bn: 'আপনার কন্টেন্ট পেস্ট করুন...' }, required: true },
       { name: 'comp_post', label: { en: 'Competitor Post', bn: 'প্রতিযোগীর পোস্ট' }, type: 'textarea', placeholder: { en: 'Paste competitor content...', bn: 'প্রতিযোগীর কন্টেন্ট পেস্ট করুন...' }, required: true }
     ],
@@ -565,7 +563,6 @@ export const TOOLS: Tool[] = [
     icon: 'Link',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'content', label: { en: 'Your Content', bn: 'আপনার কন্টেন্ট' }, type: 'textarea', placeholder: { en: 'Paste content for internal link suggestions...', bn: 'ইন্টারনাল লিংক সাজেশনের জন্য কন্টেন্ট দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Internal Linking Suggestions', 'Content & AI Writing',
@@ -580,7 +577,6 @@ export const TOOLS: Tool[] = [
     icon: 'Cpu',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Content', bn: 'কন্টেন্ট' }, type: 'textarea', placeholder: { en: 'Paste text for entity extraction...', bn: 'এনটিটি এক্সট্রাকশনের জন্য টেক্সট দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('NLP Entity Extractor', 'Content & AI Writing',
@@ -595,8 +591,7 @@ export const TOOLS: Tool[] = [
     icon: 'Clipboard',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
-      { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Best Smartphones 2025', bn: 'উদা: ২০২৫-এর সেরা স্মার্টফোন' }, required: true }
+      { name: 'topic', label: { en: 'Topic', bn: 'টপিক' }, type: 'text', placeholder: { en: 'e.g. Best Smartphones', bn: 'উদা: সেরা স্মার্টফোন' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Content Brief Generator', 'Content & AI Writing',
       'Generate a complete SEO content brief.',
@@ -610,7 +605,6 @@ export const TOOLS: Tool[] = [
     icon: 'Heading',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'headline', label: { en: 'Headline', bn: 'হেডলাইন' }, type: 'text', placeholder: { en: 'e.g. 10 Secret SEO Hacks', bn: 'উদা: এসইও-র ১০টি গোপন হ্যাক' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Headline Analyzer', 'Content & AI Writing',
@@ -625,8 +619,7 @@ export const TOOLS: Tool[] = [
     icon: 'MousePointer2',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
-      { name: 'goal', label: { en: 'Conversion Goal', bn: 'কনভার্সন গোল' }, type: 'text', placeholder: { en: 'e.g. Buy Now or Get Free Quote', bn: 'উদা: এখনই কিনুন বা ফ্রি কোট পান' }, required: true }
+      { name: 'goal', label: { en: 'Conversion Goal', bn: 'কনভার্সন গোল' }, type: 'text', placeholder: { en: 'e.g. Buy Now', bn: 'উদা: এখনই কিনুন' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('CTA Generator', 'Content & AI Writing',
       'Generate persuasive CTAs based on intent.',
@@ -640,7 +633,6 @@ export const TOOLS: Tool[] = [
     icon: 'Box',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'content', label: { en: 'Content Block', bn: 'কন্টেন্ট ব্লক' }, type: 'textarea', placeholder: { en: 'Paste content block for snippet optimization...', bn: 'স্নপেট অপ্টিমাইজেশনের জন্য কন্টেন্ট দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Snippet Optimizer', 'Content & AI Writing',
@@ -655,7 +647,6 @@ export const TOOLS: Tool[] = [
     icon: 'Code',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'data', label: { en: 'Page Info', bn: 'পেজ ইনফো' }, type: 'textarea', placeholder: { en: 'Enter business/article details...', bn: 'বিজনেস বা আর্টিকেলের তথ্য দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('Schema Markup Generator', 'Content & AI Writing',
@@ -670,7 +661,6 @@ export const TOOLS: Tool[] = [
     icon: 'CheckSquare',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Text', bn: 'টেক্সট' }, type: 'textarea', placeholder: { en: 'Paste text for proofreading...', bn: 'প্রুফরিডিংয়ের জন্য টেক্সট দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('AI Proofreader', 'Content & AI Writing',
@@ -685,16 +675,14 @@ export const TOOLS: Tool[] = [
     icon: 'Languages',
     isAI: true,
     inputs: [
-      // Fix: Added missing placeholder
       { name: 'text', label: { en: 'Source Text', bn: 'সোর্স টেক্সট' }, type: 'textarea', placeholder: { en: 'Paste text to translate...', bn: 'ট্রান্সলেট করার জন্য টেক্সট দিন...' }, required: true }
     ],
     systemPrompt: buildSystemPrompt('AI Content Translator', 'Content & AI Writing',
-      'Translate content between Bangla and English with SEO context.',
+      'Translate content with SEO context.',
       'Preserve keyword intent in the target language.')
   },
 
   // 🟨 TECHNICAL SEO (46–65)
-  // These tools use a diagnostic pattern
   ...([
     { id: 'onpage-checker', name: { en: 'On-Page SEO Checker', bn: 'অন-পেজ এসইও চেকার' }, icon: 'CheckCircle' },
     { id: 'speed-analyzer', name: { en: 'Page Speed Analyzer', bn: 'পেজ স্পিড অ্যানালাইজার' }, icon: 'Gauge' },
@@ -723,10 +711,9 @@ export const TOOLS: Tool[] = [
     description: { en: `Analyze and improve ${t.name.en}.`, bn: `${t.name.bn} বিশ্লেষণ এবং উন্নত করুন।` },
     icon: t.icon,
     isAI: true,
-    // Fix: Added missing placeholder
     inputs: [{ name: 'url_code', label: { en: 'URL or Code', bn: 'ইউআরএল বা কোড' }, type: 'textarea', placeholder: { en: 'Enter URL or code snippet...', bn: 'ইউআরএল বা কোড স্নিপেট দিন...' }, required: true }],
     systemPrompt: buildSystemPrompt(t.name.en, 'Technical SEO', 
-      'Analyze the input URL/code. Identify issues. Explain impact. Provide fix steps.',
+      'Analyze the input. Identify issues. Explain impact. Provide fix steps.',
       'Use a checklist format.')
   }))),
 
@@ -749,7 +736,6 @@ export const TOOLS: Tool[] = [
     description: { en: `Analyze and improve ${t.name.en}.`, bn: `${t.name.bn} বিশ্লেষণ এবং উন্নত করুন।` },
     icon: t.icon,
     isAI: true,
-    // Fix: Added missing placeholder
     inputs: [{ name: 'domain', label: { en: 'Domain Name', bn: 'ডোমেইন নাম' }, type: 'text', placeholder: { en: 'e.g. example.com', bn: 'উদা: example.com' }, required: true }],
     systemPrompt: buildSystemPrompt(t.name.en, 'Backlink & Authority',
       'Analyze backlink profile ethically. Explain risks. Suggest safe improvements.',
@@ -775,10 +761,9 @@ export const TOOLS: Tool[] = [
     description: { en: `Analyze and improve ${t.name.en}.`, bn: `${t.name.bn} বিশ্লেষণ এবং উন্নত করুন।` },
     icon: t.icon,
     isAI: true,
-    // Fix: Added missing placeholder
     inputs: [{ name: 'url', label: { en: 'URL', bn: 'ইউআরএল' }, type: 'url', placeholder: { en: 'https://example.com', bn: 'https://example.com' }, required: true }],
     systemPrompt: buildSystemPrompt(t.name.en, 'Analytics & Growth',
-      'Analyze SEO performance trends. No ranking guarantees. Provide growth actions.',
+      'Analyze SEO performance trends. Provide growth actions.',
       'Use data-driven insights.')
   }))),
 
@@ -806,7 +791,6 @@ export const TOOLS: Tool[] = [
     description: { en: `Utility for ${t.name.en}.`, bn: `${t.name.bn} ইউটিলিটি।` },
     icon: t.icon,
     isAI: true,
-    // Fix: Added missing placeholder
     inputs: [{ name: 'input', label: { en: 'Input', bn: 'ইনপুট' }, type: 'textarea', placeholder: { en: 'Enter text to process...', bn: 'প্রসেস করার জন্য টেক্সট দিন...' }, required: true }],
     systemPrompt: buildSystemPrompt(t.name.en, 'Utilities & Productivity',
       'Perform utility task instantly. Minimal explanation.',

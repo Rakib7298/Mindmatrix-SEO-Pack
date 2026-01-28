@@ -31,7 +31,11 @@ import {
   Wifi,
   WifiOff,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Info,
+  Clock,
+  Calendar,
+  MapPin
 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useAppState } from './store';
@@ -40,6 +44,72 @@ import { TOOLS } from './constants';
 import ToolRunner from './components/ToolRunner';
 import ChatBot from './components/ChatBot';
 
+const GeoTimeBar: React.FC<{ language: string }> = ({ language }) => {
+  const [time, setTime] = useState(new Date());
+  const [location, setLocation] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            setLocation(`${latitude.toFixed(1)}°N, ${longitude.toFixed(1)}°E`);
+          } catch (e) {
+            console.error("Location error", e);
+          }
+        },
+        () => setLocation(language === 'en' ? "HQ" : "প্রধান")
+      );
+    }
+
+    return () => clearInterval(timer);
+  }, [language]);
+
+  const t = (en: string, bn: string) => (language === 'en' ? en : bn);
+
+  const formattedTime = time.toLocaleTimeString(language === 'bn' ? 'bn-BD' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  const formattedDate = time.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+
+  return (
+    <div className="hidden lg:flex items-center gap-2 p-1.5 rounded-xl glass border border-white/20 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] transform perspective-500 rotate-x-2 hover:rotate-x-0 hover:-translate-y-0.5 transition-all duration-300 cursor-default group scale-90 origin-right">
+      {/* Time Segment */}
+      <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+        <Clock size={12} className="text-indigo-400 group-hover:animate-pulse" />
+        <span className="text-[10px] font-black tracking-widest text-white tabular-nums">
+          {formattedTime}
+        </span>
+      </div>
+
+      {/* Date Segment */}
+      <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+        <Calendar size={12} className="text-purple-400" />
+        <span className="text-[10px] font-bold text-gray-200">
+          {formattedDate}
+        </span>
+      </div>
+
+      {/* Location Segment */}
+      <div className="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+        <MapPin size={12} className="text-emerald-400" />
+        <span className="text-[10px] font-black text-emerald-400/90 truncate max-w-[70px]">
+          {location || "..."}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const { state, updateState } = useAppState();
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,6 +117,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [keySelectionActive, setKeySelectionActive] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const filteredTools = useMemo(() => {
     return TOOLS.filter(tool => {
@@ -176,36 +247,41 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Top Navigation */}
-        <header className="h-24 glass border-b border-white/5 px-10 flex items-center justify-between z-40">
-          <div className="flex-1 max-w-2xl">
+        <header className="h-20 glass border-b border-white/5 px-8 flex items-center justify-between z-40 relative">
+          <div className="flex-1 max-w-lg">
             <div className="relative group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors" size={20} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors" size={18} />
               <input 
                 type="text" 
-                placeholder={t('Analyze keywords, audits, or content...', 'কীওয়ার্ড, অডিট বা কন্টেন্ট বিশ্লেষণ করুন...')}
+                placeholder={t('Analyze keywords...', 'কীওয়ার্ড বিশ্লেষণ...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:bg-white/10 transition-all text-sm tracking-wide"
+                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:bg-white/10 transition-all text-sm tracking-wide"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          {/* Time & Date Small 3D Bar */}
+          <div className="px-4">
+            <GeoTimeBar language={state.language} />
+          </div>
+
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => updateState({ language: state.language === 'en' ? 'bn' : 'en' })}
-              className="flex items-center gap-3 px-5 py-2.5 rounded-2xl glass hover:bg-white/10 transition-all border border-white/10"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl glass hover:bg-white/10 transition-all border border-white/10 shadow-lg active:scale-95"
             >
-              <Languages size={18} className="text-indigo-400" />
-              <span className="text-xs font-bold uppercase tracking-widest">{state.language === 'en' ? 'EN' : 'BN'}</span>
+              <Languages size={16} className="text-indigo-400" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">{state.language === 'en' ? 'EN' : 'BN'}</span>
             </button>
-            <div className="h-10 w-px bg-white/10"></div>
-            <div className="flex items-center gap-4">
+            <div className="h-8 w-px bg-white/10"></div>
+            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold">{state.seoSettings.businessName || 'SEO Manager'}</p>
-                <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Enterprise Plan</p>
+                <p className="text-xs font-bold">{state.seoSettings.businessName || 'SEO Manager'}</p>
+                <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">Enterprise</p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[2px] shadow-xl">
-                <div className="w-full h-full bg-gray-900 rounded-[14px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[1px] shadow-xl">
+                <div className="w-full h-full bg-gray-900 rounded-[9px] flex items-center justify-center font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-500 text-xs">
                   {state.seoSettings.businessName ? state.seoSettings.businessName[0].toUpperCase() : 'SM'}
                 </div>
               </div>
@@ -310,7 +386,23 @@ const App: React.FC = () => {
                         <Lock size={24} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-black uppercase tracking-widest leading-none">{t('Intelligence Authentication', 'ইন্টেলিজেন্স অথেন্টিকেশন')}</h3>
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-xl font-black uppercase tracking-widest leading-none">{t('Intelligence Authentication', 'ইন্টেলিজেন্স অথেন্টিকেশন')}</h3>
+                          <div className="relative inline-block">
+                            <div 
+                              className={`w-3 h-3 rounded-full ${state.isAiConnected ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]'}`}
+                              onMouseEnter={() => setShowTooltip(true)}
+                              onMouseLeave={() => setShowTooltip(false)}
+                            ></div>
+                            {showTooltip && (
+                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 p-2 bg-gray-900 border border-white/10 rounded-lg text-[10px] text-gray-300 z-50 text-center font-bold uppercase tracking-widest">
+                                {state.isAiConnected 
+                                  ? t('System authenticated and connected to Gemini API core.', 'সিস্টেম অথেন্টিকেটেড এবং গুগলের সাথে যুক্ত।')
+                                  : t('Missing or invalid credentials. Please re-authenticate.', 'সিস্টেম এখনো অথেন্টিকেটেড নয়।')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-[10px] font-bold text-gray-500 mt-2 uppercase tracking-[0.2em]">{t('Enterprise AI Core v3.5', 'এন্টারপ্রাইজ এআই কোর v৩.৫')}</p>
                       </div>
                     </div>

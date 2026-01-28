@@ -34,7 +34,7 @@ export interface Tool {
   icon: string;
   isAI: boolean;
   inputs: ToolInput[];
-  systemPrompt?: string; // Used if isAI is true
+  systemPrompt?: string | ((settings: SeoSettings, lang: Language) => string); // Enhanced for dynamic injection
   popular?: boolean;
 }
 
